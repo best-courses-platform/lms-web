@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, Lock } from "lucide-react";
+import { ChevronRight, Lock, Pencil, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { DifficultyBadge } from "@/components/course/difficulty-badge";
 import { RatingWidget } from "@/components/course/rating-widget";
 import { getCourseById, getCourseRatings } from "@/lib/api/courses.server";
 import { getLessonsByCourse } from "@/lib/api/lessons.server";
 import { getCurrentUser } from "@/lib/api/auth.server";
 import { ApiError } from "@/lib/api/core";
+import { getCourseAuthorId } from "@/lib/api/types";
 
 async function loadCourse(id: string) {
   try {
@@ -53,6 +55,7 @@ export default async function CoursePage(props: PageProps<"/courses/[id]">) {
   }
 
   const { course, lessons, ratings } = data;
+  const isCourseAuthor = currentUser != null && currentUser.id === getCourseAuthorId(course.author);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
@@ -70,7 +73,17 @@ export default async function CoursePage(props: PageProps<"/courses/[id]">) {
         ))}
       </div>
 
-      <h1 className="mt-4 text-3xl font-semibold tracking-tight">{course.title}</h1>
+      <div className="mt-4 flex items-start justify-between gap-4">
+        <h1 className="text-3xl font-semibold tracking-tight">{course.title}</h1>
+        {isCourseAuthor && (
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/courses/${course._id}/edit`}>
+              <Pencil />
+              Редактировать
+            </Link>
+          </Button>
+        )}
+      </div>
       <p className="mt-3 whitespace-pre-line text-muted-foreground">{course.description}</p>
 
       <section className="mt-8">
@@ -79,7 +92,17 @@ export default async function CoursePage(props: PageProps<"/courses/[id]">) {
       </section>
 
       <section className="mt-10">
-        <h2 className="mb-3 text-lg font-semibold tracking-tight">Программа курса</h2>
+        <div className="mb-3 flex items-center justify-between gap-4">
+          <h2 className="text-lg font-semibold tracking-tight">Программа курса</h2>
+          {isCourseAuthor && (
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/courses/${course._id}/lessons/new`}>
+                <Plus />
+                Добавить урок
+              </Link>
+            </Button>
+          )}
+        </div>
         {lessons.length === 0 ? (
           <p className="text-sm text-muted-foreground">В курсе пока нет уроков.</p>
         ) : (

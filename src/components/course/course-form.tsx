@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent, type KeyboardEvent } from "react";
-import { X } from "lucide-react";
+import { useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
+import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,26 +18,52 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DIFFICULTY_LABELS } from "@/components/course/difficulty-badge";
-import { createCourse } from "@/lib/api/courses.client";
+import { createCourse, updateCourse, uploadCoursePreviewImage } from "@/lib/api/courses.client";
 import { ApiError } from "@/lib/api/core";
-import type { Difficulty } from "@/lib/api/types";
+import type { Course, Difficulty } from "@/lib/api/types";
 
 const MAX_TAGS = 10;
 const MAX_TAG_LENGTH = 30;
 
-export function CreateCourseForm() {
+// Одна форма на создание и редактирование — отличаются только начальными значениями
+// полей и тем, что дёрнуть на сабмите (createCourse/updateCourse). course === undefined
+// значит "создание".
+export function CourseForm({ course }: { course?: Course }) {
   const router = useRouter();
+  const isEdit = course != null;
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [previewImage, setPreviewImage] = useState("");
-  const [difficulty, setDifficulty] = useState<Difficulty>("beginner");
-  const [isPublished, setIsPublished] = useState(false);
-  const [tags, setTags] = useState<string[]>([]);
+  const [title, setTitle] = useState(course?.title ?? "");
+  const [description, setDescription] = useState(course?.description ?? "");
+  const [previewImage, setPreviewImage] = useState(course?.previewImage ?? "");
+  const [difficulty, setDifficulty] = useState<Difficulty>(course?.difficulty ?? "beginner");
+  const [isPublished, setIsPublished] = useState(course?.isPublished ?? false);
+  const [tags, setTags] = useState<string[]>(course?.tags ?? []);
   const [tagInput, setTagInput] = useState("");
 
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
+
+  async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // позволяет выбрать тот же файл повторно после ошибки
+    if (!file) {
+      return;
+    }
+
+    setImageError(null);
+    setUploadingImage(true);
+    try {
+      const { url } = await uploadCoursePreviewImage(file);
+      setPreviewImage(url);
+    } catch (err) {
+      setImageError(err instanceof ApiError ? err.message : "Не удалось загрузить обложку, попробуйте ещё раз");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
 
   function addTag() {
     const tag = tagInput.trim();
@@ -62,21 +88,26 @@ export function CreateCourseForm() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (!previewImage) {
+      setError("Загрузите обложку курса");
+      return;
+    }
+
     setPending(true);
 
+    const payload = { title, description, previewImage, tags, difficulty, isPublished };
+
     try {
-      const { course } = await createCourse({
-        title,
-        description,
-        previewImage,
-        tags,
-        difficulty,
-        isPublished,
-      });
-      toast.success("Курс создан");
-      router.push(`/courses/${course._id}`);
+      const result = isEdit ? await updateCourse(course._id, payload) : await createCourse(payload);
+      toast.success(isEdit ? "Курс обновлён" : "Курс создан");
+      router.push(`/courses/${result.course._id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Не удалось создать курс, попробуйте ещё раз");
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : `Не удалось ${isEdit ? "сохранить" : "создать"} курс, попробуйте ещё раз`
+      );
       setPending(false);
     }
   }
@@ -108,19 +139,25 @@ export function CreateCourseForm() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <Label htmlFor="previewImage">Ссылка на обложку</Label>
+        <Label htmlFor="previewImageFile">Обложка</Label>
         <Input
-          id="previewImage"
-          type="url"
-          required
-          placeholder="https://..."
-          value={previewImage}
-          onChange={(e) => setPreviewImage(e.target.value)}
+          id="previewImageFile"
+          type="file"
+          accept="image/*"
+          disabled={uploadingImage}
+          onChange={handleFileChange}
         />
-        {previewImage && (
+        {uploadingImage && (
+          <p className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            Загружаем...
+          </p>
+        )}
+        {imageError && <p className="text-sm text-destructive">{imageError}</p>}
+        {previewImage && !uploadingImage && (
           <div className="mt-1 aspect-video w-full max-w-xs overflow-hidden rounded-lg bg-muted">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={previewImage} alt="" className="size-full object-cover" onError={(e) => (e.currentTarget.style.visibility = "hidden")} />
+            <img src={previewImage} alt="" className="size-full object-cover" />
           </div>
         )}
       </div>
@@ -172,9 +209,11 @@ export function CreateCourseForm() {
 
       <div className="flex items-center justify-between rounded-lg border border-border p-4">
         <div className="flex flex-col gap-0.5">
-          <Label htmlFor="isPublished">Опубликовать сразу</Label>
+          <Label htmlFor="isPublished">{isEdit ? "Опубликован" : "Опубликовать сразу"}</Label>
           <p className="text-sm text-muted-foreground">
-            Черновик виден только вам, пока вы его не опубликуете.
+            {isEdit
+              ? "Если выключить, курс станет черновиком — видимым только вам."
+              : "Черновик виден только вам, пока вы его не опубликуете."}
           </p>
         </div>
         <Switch id="isPublished" checked={isPublished} onCheckedChange={setIsPublished} />
@@ -182,8 +221,8 @@ export function CreateCourseForm() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button type="submit" disabled={pending}>
-        {pending ? "Создаём..." : "Создать курс"}
+      <Button type="submit" disabled={pending || uploadingImage}>
+        {pending ? "Сохраняем..." : isEdit ? "Сохранить изменения" : "Создать курс"}
       </Button>
     </form>
   );

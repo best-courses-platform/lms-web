@@ -41,3 +41,19 @@ export function createCourse(input: CreateCourseInput) {
     body: JSON.stringify(input),
   });
 }
+
+// PATCH принимает частичный набор полей (updateCourseSchema — courseBaseSchema.partial()),
+// но форма редактирования всегда шлёт все поля разом — так же просто, как create,
+// и не нужно отдельно отслеживать, что именно из полей реально изменилось.
+export function updateCourse(id: string, input: CreateCourseInput) {
+  return apiClient<{ message: string; course: Course }>(`/api/courses/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+// Удаляет курс вместе со всеми его уроками и их файлами в S3 (каскад — на бэкенде,
+// см. courseService.delete → lessonService.deleteAllForCourse в express-lms).
+export function deleteCourse(id: string) {
+  return apiClient<{ message: string }>(`/api/courses/${id}`, { method: "DELETE" });
+}
