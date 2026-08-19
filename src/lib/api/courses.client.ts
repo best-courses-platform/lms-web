@@ -11,6 +11,19 @@ export function rateCourse(courseId: string, value: number) {
   });
 }
 
+// Загрузка обложки курса — отдельно от создания курса (на момент загрузки курса ещё
+// нет в БД, id для привязки нет). Возвращает публичный S3-URL, который дальше кладётся
+// в previewImage при вызове createCourse.
+export function uploadCoursePreviewImage(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return apiClient<{ message: string; url: string }>("/api/courses/preview-image", {
+    method: "POST",
+    body: formData,
+  });
+}
+
 export type CreateCourseInput = {
   title: string;
   description: string;
