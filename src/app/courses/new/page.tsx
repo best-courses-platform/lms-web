@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Lock } from "lucide-react";
-import { CreateCourseForm } from "@/components/course/create-course-form";
+import { CourseForm } from "@/components/course/course-form";
 import { getCurrentUser } from "@/lib/api/auth.server";
 
 export const metadata: Metadata = { title: "Новый курс — Best Courses" };
@@ -31,7 +31,7 @@ export default async function NewCoursePage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
       <h1 className="mb-8 text-3xl font-semibold tracking-tight">Новый курс</h1>
-      <CreateCourseForm />
+      <CourseForm />
     </div>
   );
 }

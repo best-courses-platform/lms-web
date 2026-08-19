@@ -4,9 +4,12 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LessonResources } from "@/components/lesson/lesson-resources";
+import { LessonMediaManager } from "@/components/lesson/lesson-media-manager";
 import { getLessonById, getLessonsByCourse } from "@/lib/api/lessons.server";
 import { getCourseById } from "@/lib/api/courses.server";
+import { getCurrentUser } from "@/lib/api/auth.server";
 import { ApiError } from "@/lib/api/core";
+import { getCourseAuthorId } from "@/lib/api/types";
 
 async function loadLesson(id: string) {
   try {
@@ -41,7 +44,7 @@ export async function generateMetadata(props: PageProps<"/lessons/[id]">): Promi
 
 export default async function LessonPage(props: PageProps<"/lessons/[id]">) {
   const { id } = await props.params;
-  const data = await loadLesson(id);
+  const [data, currentUser] = await Promise.all([loadLesson(id), getCurrentUser()]);
 
   if (data.forbidden) {
     return (
@@ -56,6 +59,7 @@ export default async function LessonPage(props: PageProps<"/lessons/[id]">) {
   }
 
   const { lesson, course, courseLessons } = data;
+  const isCourseAuthor = currentUser != null && currentUser.id === getCourseAuthorId(course.author);
 
   const sortedLessons = courseLessons.slice().sort((a, b) => a.order - b.order);
   const currentIndex = sortedLessons.findIndex((l) => l._id === lesson._id);
@@ -80,29 +84,14 @@ export default async function LessonPage(props: PageProps<"/lessons/[id]">) {
 
       <p className="whitespace-pre-line text-muted-foreground">{lesson.description}</p>
 
-      {(lesson.inputExamples || lesson.outputExamples) && (
-        <section className="mt-8 grid gap-4 sm:grid-cols-2">
-          {lesson.inputExamples && (
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <h2 className="mb-2 text-sm font-medium text-muted-foreground">Пример входных данных</h2>
-              <pre className="whitespace-pre-wrap text-sm">{lesson.inputExamples}</pre>
-            </div>
-          )}
-          {lesson.outputExamples && (
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <h2 className="mb-2 text-sm font-medium text-muted-foreground">Пример результата</h2>
-              <pre className="whitespace-pre-wrap text-sm">{lesson.outputExamples}</pre>
-            </div>
-          )}
-        </section>
-      )}
-
       {lesson.resources && lesson.resources.length > 0 && (
         <section className="mt-8">
           <h2 className="mb-3 text-lg font-semibold tracking-tight">Материалы</h2>
           <LessonResources resources={lesson.resources} />
         </section>
       )}
+
+      {isCourseAuthor && <LessonMediaManager lesson={lesson} />}
 
       <nav className="mt-10 flex items-center justify-between gap-4 border-t border-border pt-6">
         {prevLesson ? (

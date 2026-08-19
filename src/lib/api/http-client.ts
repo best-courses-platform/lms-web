@@ -6,10 +6,15 @@ import { apiUrl, parseResponse, ApiError } from "./core";
 // на тот же origin. credentials: 'include' обязателен, иначе браузер cookie не отправит
 // на кросс-origin запрос (в dev Next и Express — разные порты, см. .env.local/README).
 export async function apiClient<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // FormData (загрузка файлов) сама выставляет Content-Type: multipart/form-data
+  // с нужным boundary — если поставить application/json поверх, браузер не сможет
+  // распарсить своё же тело, запрос уйдёт битым.
+  const isFormData = init.body instanceof FormData;
+
   const res = await fetch(apiUrl(path), {
     ...init,
     headers: {
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...(init.body && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...init.headers,
     },
     credentials: "include",
