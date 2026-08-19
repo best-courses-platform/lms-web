@@ -82,8 +82,6 @@ export type Lesson = {
   order: number;
   videoFile?: VideoFile;
   resources?: LessonResource[];
-  inputExamples?: string;
-  outputExamples?: string;
   tags: string[];
   createdAt: string;
   updatedAt: string;

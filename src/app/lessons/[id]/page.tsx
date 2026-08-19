@@ -84,23 +84,6 @@ export default async function LessonPage(props: PageProps<"/lessons/[id]">) {
 
       <p className="whitespace-pre-line text-muted-foreground">{lesson.description}</p>
 
-      {(lesson.inputExamples || lesson.outputExamples) && (
-        <section className="mt-8 grid gap-4 sm:grid-cols-2">
-          {lesson.inputExamples && (
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <h2 className="mb-2 text-sm font-medium text-muted-foreground">Пример входных данных</h2>
-              <pre className="whitespace-pre-wrap text-sm">{lesson.inputExamples}</pre>
-            </div>
-          )}
-          {lesson.outputExamples && (
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <h2 className="mb-2 text-sm font-medium text-muted-foreground">Пример результата</h2>
-              <pre className="whitespace-pre-wrap text-sm">{lesson.outputExamples}</pre>
-            </div>
-          )}
-        </section>
-      )}
-
       {lesson.resources && lesson.resources.length > 0 && (
         <section className="mt-8">
           <h2 className="mb-3 text-lg font-semibold tracking-tight">Материалы</h2>
