@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
 import { getCurrentUser } from "@/lib/api/auth.server";
 
@@ -27,18 +28,21 @@ export async function SiteHeader() {
           </nav>
         </div>
 
-        {user ? (
-          <UserMenu user={user} />
-        ) : (
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild>
-              <Link href="/login">Войти</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/register">Регистрация</Link>
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          {user ? (
+            <UserMenu user={user} />
+          ) : (
+            <>
+              <Button variant="ghost" asChild>
+                <Link href="/login">Войти</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/register">Регистрация</Link>
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );

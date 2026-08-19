@@ -18,3 +18,10 @@ export function getCourseById(id: string): Promise<Course> {
 export function getCourseRatings(id: string): Promise<Rating[]> {
   return apiServer<Rating[]>(`/api/courses/${id}/ratings`);
 }
+
+// GET /api/courses/mine — требует авторизации. Бэкенд сам решает состав по роли:
+// автору/админу — курсы, которые он ведёт; студенту — курсы, куда его добавили
+// в allowedUsers (см. course.service.ts#getMyCourses в express-lms).
+export function getMyCourses(): Promise<Course[]> {
+  return apiServer<Course[]>("/api/courses/mine");
+}
