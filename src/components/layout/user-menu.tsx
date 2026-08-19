@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -53,6 +54,10 @@ export function UserMenu({ user }: { user: User }) {
           <span className="font-medium">{user.name}</span>
           <span className="text-xs font-normal text-muted-foreground">{user.email}</span>
         </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard">Личный кабинет</Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled={pending} onSelect={handleLogout}>
           Выйти

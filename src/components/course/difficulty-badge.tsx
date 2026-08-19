@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import type { Difficulty } from "@/lib/api/types";
 
-const LABELS: Record<Difficulty, string> = {
+export const DIFFICULTY_LABELS: Record<Difficulty, string> = {
   beginner: "Начальный",
   intermediate: "Средний",
   advanced: "Продвинутый",
@@ -18,7 +18,7 @@ const STYLES: Record<Difficulty, string> = {
 export function DifficultyBadge({ difficulty }: { difficulty: Difficulty }) {
   return (
     <Badge variant="outline" className={STYLES[difficulty]}>
-      {LABELS[difficulty]}
+      {DIFFICULTY_LABELS[difficulty]}
     </Badge>
   );
 }

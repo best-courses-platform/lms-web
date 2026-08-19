@@ -39,6 +39,14 @@ export function CourseCard({ course }: { course: Course }) {
           )}
         </div>
 
+        {/* Черновик виден только автору/allowedUsers (canAccess на бэкенде) — на публичном
+            каталоге (только published-курсы) эта ветка никогда не рендерится. */}
+        {!course.isPublished && (
+          <Badge variant="outline" className="w-fit border-dashed text-muted-foreground">
+            Черновик
+          </Badge>
+        )}
+
         <p className="line-clamp-2 text-sm text-muted-foreground">{course.description}</p>
 
         <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-1">
