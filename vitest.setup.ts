@@ -18,3 +18,32 @@ afterEach(cleanup);
 // process.env.* в express-lms/test/setupTestEnv.ts: единая, безопасная база по умолчанию,
 // которую конкретный тест может переопределить/удалить локально (см. core.unit.spec.ts).
 process.env.NEXT_PUBLIC_API_URL ??= "https://api.test.local";
+
+// jsdom не реализует ResizeObserver — Radix (например, Switch через @radix-ui/react-use-size,
+// используется в course-form.tsx) вызывает его в layout-эффекте при монтировании, без него
+// падает с ReferenceError на любом рендере, даже не связанном напрямую с самим замером
+// размера. Минимальный no-op достаточен — тестам не важны реальные измерения layout.
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
+// jsdom тоже не реализует Pointer Capture API и scrollIntoView — Radix Select (course-form.tsx)
+// вызывает element.hasPointerCapture()/scrollIntoView() при открытии дропдауна через клик по
+// триггеру, без полифилла падает TypeError "hasPointerCapture is not a function" прямо
+// в обработчике клика, вне try/catch теста (Unhandled Exception, а не обычный assertion fail).
+if (typeof Element.prototype.hasPointerCapture === "undefined") {
+  Element.prototype.hasPointerCapture = () => false;
+}
+if (typeof Element.prototype.setPointerCapture === "undefined") {
+  Element.prototype.setPointerCapture = () => {};
+}
+if (typeof Element.prototype.releasePointerCapture === "undefined") {
+  Element.prototype.releasePointerCapture = () => {};
+}
+if (typeof Element.prototype.scrollIntoView === "undefined") {
+  Element.prototype.scrollIntoView = () => {};
+}
