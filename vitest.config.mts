@@ -1,11 +1,12 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 // Async Server Components (см. app/dashboard/page.tsx и т.п.) Vitest тестировать не может —
 // официальная позиция Next.js: "recommend E2E tests for async components" (node_modules/next/
 // dist/docs/01-app/02-guides/testing/vitest.md). Этот слой намеренно вне охвата unit-тестов
 // здесь — только клиентские компоненты ("use client"), src/lib/api/*.client.ts и чистые
-// утилиты. Реальные страницы/навигация — отдельная задача под Playwright, ещё не начата.
+// утилиты. Реальные страницы/навигация и async Server Components — под Playwright
+// (см. e2e/, playwright.config.ts).
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -16,6 +17,11 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
+    // Vitest по умолчанию матчит любой **/*.spec.ts, включая e2e/*.spec.ts — а это
+    // Playwright-тесты (свои test/expect из @playwright/test, реальный Page), под Vitest
+    // они не то что "не проходят", а падают на самом импорте/типах. configDefaults.exclude —
+    // чтобы не потерять штатные исключения (node_modules и т.п.), только дополнить их.
+    exclude: [...configDefaults.exclude, "e2e/**"],
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
