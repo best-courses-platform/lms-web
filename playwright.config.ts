@@ -22,7 +22,13 @@ export default defineConfig({
   reporter: "html",
   use: {
     baseURL: "http://localhost:3001",
-    trace: "on-first-retry",
+    // "on-first-retry" — трасса (то, что рисует таймлайн/Actions/скриншоты в --ui и в
+    // HTML-отчёте) пишется только для тестов, которые пришлось перезапускать — экономит
+    // место на CI, где основная цель именно диагностика падений. Локально, под --ui,
+    // это означало пустой about:blank и пустой список Actions для ЛЮБОГО теста, который
+    // прошёл с первого раза — а локально с --ui обычно смотрят именно "как это работало",
+    // не только падения. "on" — трасса пишется всегда, локально это то, что нужно.
+    trace: process.env.CI ? "on-first-retry" : "on",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
