@@ -36,6 +36,10 @@ export default defineConfig({
         // Паттерн без ведущей точки — покрывает и auth.server.ts/courses.server.ts/
         // lessons.server.ts, и http-server.ts (дефис, не точка перед "server").
         "src/lib/api/*server.ts",
+        // SiteHeader — async Server Component (нет "use client"), транзитивно импортирует
+        // lib/api/auth.server.ts (import "server-only") через getCurrentUser() — тот же
+        // класс ограничения, что и async-страницы в src/app/**, просто лежит не под app/.
+        "src/components/layout/site-header.tsx",
       ],
     },
   },

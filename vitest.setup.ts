@@ -47,3 +47,19 @@ if (typeof Element.prototype.releasePointerCapture === "undefined") {
 if (typeof Element.prototype.scrollIntoView === "undefined") {
   Element.prototype.scrollIntoView = () => {};
 }
+
+// jsdom не реализует window.matchMedia — next-themes (ThemeProvider) обращается к нему в
+// эффекте при монтировании, чтобы определить системную тему, даже при enableSystem={false}.
+// Без полифилла падает TypeError на любом рендере реального (не замоканного) ThemeProvider.
+if (typeof window.matchMedia === "undefined") {
+  window.matchMedia = (query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  });
+}
