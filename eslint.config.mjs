@@ -14,6 +14,10 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Сгенерированный HTML/JS-отчёт vitest --coverage (см. .gitignore) — не наш код.
     "coverage/**",
+    // Артефакты локального запуска Playwright (см. .gitignore) — минифицированный
+    // сторонний бандл HTML-репорта, не наш код.
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 
