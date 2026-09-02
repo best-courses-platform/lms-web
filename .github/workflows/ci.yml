@@ -1,0 +1,107 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Новый пуш в тот же PR отменяет ещё бегущий запуск по предыдущему коммиту —
+# не тратим минуты раннера на заведомо устаревший код.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run typecheck
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+        # apiUrl() (src/lib/api/core.ts) кидает понятную ошибку, только если её реально
+        # вызвать в рантайме — сейчас все роуты динамические (см. `next build` вывод: ƒ),
+        # поэтому билд проходит и без переменной. Задаём фиктивное значение явно, чтобы
+        # сборка не стала случайно зависеть от порядка страниц/будущей статики.
+        env:
+          NEXT_PUBLIC_API_URL: https://ci.invalid
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # NEXT_PUBLIC_API_URL на уровне job, не шага — playwright.config.ts сам поднимает
+    # `npm run dev` (эта папка) и `npm run e2e:server` (express-lms) как дочерние процессы
+    # (webServer), а не только сама команда test:e2e, так что переменная нужна и им.
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+    steps:
+      # express-lms — сосед lms-web на диске (../express-lms относительно __dirname
+      # playwright.config.ts, см. e2e/helpers.ts) — actions/checkout не даёт чекаутить выше
+      # $GITHUB_WORKSPACE (`path: ../express-lms` отклоняется как небезопасный), поэтому
+      # оба репозитория чекаутим явными подпапками одного workspace — они всё равно сиблинги
+      # друг друга, playwright.config.ts это и ожидает.
+      - uses: actions/checkout@v4
+        with:
+          path: lms-web
+      - uses: actions/checkout@v4
+        with:
+          repository: best-courses-platform/express-lms
+          path: express-lms
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: 'lms-web/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: |
+            lms-web/package-lock.json
+            express-lms/package-lock.json
+      - run: npm ci
+        working-directory: lms-web
+      - run: npm ci
+        working-directory: express-lms
+      # test/e2eServer.ts (express-lms) качает бинарь mongod при первом запуске — тот же
+      # кеш, что и в express-lms/.github/workflows/ci.yml, по тому же ключу.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('express-lms/package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+        working-directory: lms-web
+      - run: npm run test:e2e
+        working-directory: lms-web
