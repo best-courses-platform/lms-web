@@ -51,6 +51,10 @@ describe("UserMenu", () => {
       // DropdownMenuItem asChild рендерит <a>, но Radix явно проставляет role="menuitem"
       // поверх implicit "link" — доступная роль в дереве именно menuitem, не link.
       expect(screen.getByRole("menuitem", { name: "Личный кабинет" })).toHaveAttribute("href", "/dashboard");
+      expect(screen.getByRole("menuitem", { name: "Активные сессии" })).toHaveAttribute(
+        "href",
+        "/dashboard/sessions"
+      );
     });
   });
 

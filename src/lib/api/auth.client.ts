@@ -30,3 +30,17 @@ export function verifyEmail(token: string) {
 export function logout() {
   return apiClient<{ message: string }>("/api/auth/logout", { method: "POST" });
 }
+
+// Экран "активные сессии" (/dashboard/sessions) — завершить одну чужую сессию/устройство.
+// Бэкенд отдаёт 204 без тела (см. auth.controller.ts#deleteSession), apiClient/parseResponse
+// это отражают как T = void.
+export function revokeSession(id: string) {
+  return apiClient<void>(`/api/auth/sessions/${id}`, { method: "DELETE" });
+}
+
+// В отличие от logout() — гасит вообще все сессии пользователя, включая текущую (см.
+// authService.revokeAllForUser с reason 'logout-all'). Cookie после этого мертва — вызывающий
+// компонент сам решает, куда редиректить (см. sessions-list.tsx).
+export function logoutAll() {
+  return apiClient<{ message: string }>("/api/auth/logout-all", { method: "POST" });
+}

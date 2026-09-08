@@ -58,6 +58,9 @@ export function UserMenu({ user }: { user: User }) {
         <DropdownMenuItem asChild>
           <Link href="/dashboard">Личный кабинет</Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/sessions">Активные сессии</Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled={pending} onSelect={handleLogout}>
           Выйти

@@ -14,6 +14,19 @@ export type User = {
   updatedAt?: string;
 };
 
+// Списано с refresh-session.types.ts (SessionView) — публичная проекция сессии для экрана
+// "активные сессии": намеренно без tokenHash/familyId/replacedBySession, клиенту знать о них
+// незачем. userAgent/ip — только для отображения, не гарантированно достоверны (см. бэкенд).
+export type SessionView = {
+  id: string;
+  current: boolean;
+  createdAt: string;
+  lastUsedAt: string | null;
+  expiresAt: string;
+  userAgent: string | null;
+  ip: string | null;
+};
+
 export type Difficulty = "beginner" | "intermediate" | "advanced";
 
 export type Rating = {
