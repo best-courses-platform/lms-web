@@ -8,7 +8,7 @@ import type { apiClient as ApiClientFn } from "../http-client";
 vi.mock("../http-client", () => ({ apiClient: vi.fn() }));
 
 const { apiClient } = (await import("../http-client")) as unknown as { apiClient: typeof ApiClientFn };
-const { login, register, verifyEmail, logout } = await import("../auth.client");
+const { login, register, verifyEmail, logout, logoutAll, revokeSession } = await import("../auth.client");
 
 const mockApiClient = apiClient as ReturnType<typeof vi.fn>;
 
@@ -61,6 +61,22 @@ describe("auth.client", () => {
       await logout();
 
       expect(mockApiClient).toHaveBeenCalledWith("/api/auth/logout", { method: "POST" });
+    });
+  });
+
+  describe("logoutAll", () => {
+    it("должен отправить POST на /api/auth/logout-all без тела", async () => {
+      await logoutAll();
+
+      expect(mockApiClient).toHaveBeenCalledWith("/api/auth/logout-all", { method: "POST" });
+    });
+  });
+
+  describe("revokeSession", () => {
+    it("должен отправить DELETE на /api/auth/sessions/:id", async () => {
+      await revokeSession("session-123");
+
+      expect(mockApiClient).toHaveBeenCalledWith("/api/auth/sessions/session-123", { method: "DELETE" });
     });
   });
 });
