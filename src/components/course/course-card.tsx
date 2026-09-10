@@ -39,8 +39,8 @@ export function CourseCard({ course }: { course: Course }) {
           )}
         </div>
 
-        {/* Черновик виден только автору/allowedUsers (canAccess на бэкенде) — на публичном
-            каталоге (только published-курсы) эта ветка никогда не рендерится. */}
+        {/* Черновик виден только автору/записанным студентам (canAccess на бэкенде) — на
+            публичном каталоге (только published-курсы) эта ветка никогда не рендерится. */}
         {!course.isPublished && (
           <Badge variant="outline" className="w-fit border-dashed text-muted-foreground">
             Черновик

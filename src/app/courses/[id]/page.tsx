@@ -6,8 +6,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DifficultyBadge } from "@/components/course/difficulty-badge";
 import { RatingWidget } from "@/components/course/rating-widget";
+import { EnrolledStudents } from "@/components/course/enrolled-students";
 import { getCourseById, getCourseRatings } from "@/lib/api/courses.server";
 import { getLessonsByCourse } from "@/lib/api/lessons.server";
+import { getCourseStudents } from "@/lib/api/enrollments.server";
 import { getCurrentUser } from "@/lib/api/auth.server";
 import { ApiError } from "@/lib/api/core";
 import { getCourseAuthorId } from "@/lib/api/types";
@@ -56,6 +58,11 @@ export default async function CoursePage(props: PageProps<"/courses/[id]">) {
 
   const { course, lessons, ratings } = data;
   const isCourseAuthor = currentUser != null && currentUser.id === getCourseAuthorId(course.author);
+  // Список студентов — только автору курса (403 у остальных, см. enrollment.service.ts
+  // в express-lms) — отдельным запросом, не в Promise.all с курсом/уроками/оценками выше:
+  // isCourseAuthor известен только после currentUser, а до него ни один из тех трёх запросов
+  // не требовался.
+  const students = isCourseAuthor ? await getCourseStudents(course._id) : null;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
@@ -125,6 +132,13 @@ export default async function CoursePage(props: PageProps<"/courses/[id]">) {
           </ol>
         )}
       </section>
+
+      {students && (
+        <section className="mt-10">
+          <h2 className="mb-3 text-lg font-semibold tracking-tight">Студенты</h2>
+          <EnrolledStudents courseId={course._id} initialStudents={students} />
+        </section>
+      )}
     </div>
   );
 }
