@@ -8,7 +8,7 @@ export function getPublishedCourses(): Promise<Course[]> {
   return apiServer<Course[]>("/api/courses/published");
 }
 
-// GET /api/courses/:id — может 403 (приватный курс, не автор/не в allowedUsers) или
+// GET /api/courses/:id — может 403 (приватный курс, не автор/не записан на него) или
 // 404 (не найден). Оба случая обрабатывает вызывающая страница (courseService.canAccess
 // на бэкенде, см. Рефакторинг проблем/4 в express-lms), здесь ошибка просто прокидывается.
 export function getCourseById(id: string): Promise<Course> {
@@ -20,8 +20,8 @@ export function getCourseRatings(id: string): Promise<Rating[]> {
 }
 
 // GET /api/courses/mine — требует авторизации. Бэкенд сам решает состав по роли:
-// автору/админу — курсы, которые он ведёт; студенту — курсы, куда его добавили
-// в allowedUsers (см. course.service.ts#getMyCourses в express-lms).
+// автору/админу — курсы, которые он ведёт; студенту — курсы, на которые он записан
+// (Enrollment, см. course.service.ts#getMyCourses в express-lms).
 export function getMyCourses(): Promise<Course[]> {
   return apiServer<Course[]>("/api/courses/mine");
 }

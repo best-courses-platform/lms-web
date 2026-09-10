@@ -28,6 +28,16 @@ export function getCourseAuthorId(author: Course["author"]): string {
   return typeof author === "string" ? author : author._id;
 }
 
+export type Enrollment = components["schemas"]["Enrollment"];
+
+// userId — либо чистый ObjectId-строка, либо популейченный { _id, name, email } (см.
+// GET /api/courses/{id}/enrollments в express-lms) — тот же паттерн union, что и у Course.author.
+export type EnrollmentStudent = Extract<Enrollment["userId"], object>;
+
+export function getEnrollmentUserId(userId: Enrollment["userId"]): string {
+  return typeof userId === "string" ? userId : userId._id;
+}
+
 export type Lesson = components["schemas"]["Lesson"];
 
 export type VideoFile = NonNullable<Lesson["videoFile"]>;
