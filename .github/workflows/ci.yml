@@ -77,6 +77,34 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: https://ci.invalid
 
+  openapi-types:
+    runs-on: ubuntu-latest
+    steps:
+      # Та же схема сиблинг-чекаута, что и у e2e ниже — types:api читает
+      # ../express-lms/openapi.json относительно этой папки, серверы express-lms не нужны,
+      # только сам закоммиченный файл спеки.
+      - uses: actions/checkout@v4
+        with:
+          path: lms-web
+      - uses: actions/checkout@v4
+        with:
+          repository: best-courses-platform/express-lms
+          path: express-lms
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: 'lms-web/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: lms-web/package-lock.json
+      - run: npm ci
+        working-directory: lms-web
+      - run: npm run types:api
+        working-directory: lms-web
+      # Если бэкенд поменял zod-схему и перегенерировал openapi.json, а фронтенд не
+      # перегенерировал schema.gen.ts под него — PR не должен молча проехать с устаревшими
+      # типами (см. Obsidian: Рефакторинг проблем/0, пункт про кодоген).
+      - run: git diff --exit-code src/lib/api/schema.gen.ts
+        working-directory: lms-web
+
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 15
