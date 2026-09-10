@@ -32,7 +32,7 @@ function createCourse(overrides: Partial<Course> = {}): Course {
     author: "author-1",
     tags: ["existing-tag"],
     difficulty: "intermediate",
-    ratings: [],
+    lessonsCount: 0,
     isPublished: true,
     allowedUsers: [],
     createdAt: "2026-01-01T00:00:00.000Z",

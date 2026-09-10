@@ -22,7 +22,11 @@ import { logoutAll, revokeSession } from "@/lib/api/auth.client";
 import { ApiError } from "@/lib/api/core";
 import type { SessionView } from "@/lib/api/types";
 
-function formatDate(value: string): string {
+function formatDate(value: string | null): string {
+  // Спека (schema.gen.ts) типизирует все даты как string | null — общее для любого
+  // coerced-в-Date поля в zod-to-openapi, не гарантия, что конкретно у сессии дата
+  // когда-либо реально отсутствует. Такой fallback дешевле, чем спорить со спекой.
+  if (!value) return "неизвестно";
   return new Date(value).toLocaleString("ru-RU", { dateStyle: "medium", timeStyle: "short" });
 }
 

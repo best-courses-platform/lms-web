@@ -17,7 +17,14 @@ vi.mock("@/lib/api/auth.client", () => ({ logout: logoutMock }));
 
 const { UserMenu } = await import("../user-menu");
 
-const user: User = { id: "user-1", email: "user@example.com", name: "Ivan Petrov", role: "student" };
+const user: User = {
+  id: "user-1",
+  email: "user@example.com",
+  name: "Ivan Petrov",
+  role: "student",
+  createdAt: null,
+  updatedAt: null,
+};
 
 describe("UserMenu", () => {
   beforeEach(() => {
