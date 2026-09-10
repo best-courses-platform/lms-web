@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description: "Образовательная платформа",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children, modal }: LayoutProps<"/">) {
   return (
     <html
       lang="ru"
@@ -36,6 +36,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           <SiteHeader />
           <main className="flex-1">{children}</main>
+          {/* @modal — parallel route slot для перехвата /lessons/[id] (см. @modal/(.)lessons/[id]),
+              рендерится поверх children, не вместо. default.tsx отдаёт null везде, где слот
+              ничего не перехватил. */}
+          {modal}
           <Toaster richColors position="top-center" />
         </ThemeProvider>
       </body>
