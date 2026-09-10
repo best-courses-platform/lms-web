@@ -1305,7 +1305,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Мои курсы — авторские (author/admin) или доступные (student, через allowedUsers) */
+        /** Мои курсы — авторские (author/admin) или доступные (student, через запись на курс) */
         get: {
             parameters: {
                 query?: never;
@@ -1352,7 +1352,7 @@ export interface paths {
         };
         /**
          * Курс по id
-         * @description Непубликованный курс виден только автору/allowedUsers (canAccess) — авторизация опциональна, но учитывается, если токен передан.
+         * @description Непубликованный курс виден только автору/записанным студентам (canAccess) — авторизация опциональна, но учитывается, если токен передан.
          */
         get: {
             parameters: {
@@ -1744,17 +1744,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/courses/{id}/allowed-users": {
+    "/api/courses/{id}/enrollments": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
-        /** Выдать доступ пользователю к неопубликованному курсу */
-        post: {
+        /** Список активных студентов курса */
+        get: {
             parameters: {
                 query?: never;
                 header?: never;
@@ -1763,24 +1761,15 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody?: {
-                content: {
-                    "application/json": {
-                        userId: string;
-                    };
-                };
-            };
+            requestBody?: never;
             responses: {
-                /** @description Пользователь добавлен в allowedUsers */
+                /** @description Массив активных записей */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            message: string;
-                            course: components["schemas"]["Course"];
-                        };
+                        "application/json": components["schemas"]["Enrollment"][];
                     };
                 };
                 /** @description Не авторизован */
@@ -1812,44 +1801,38 @@ export interface paths {
                 };
             };
         };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/courses/{id}/allowed-users/{userId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
         put?: never;
-        post?: never;
-        /** Убрать доступ пользователя к курсу */
-        delete: {
+        /**
+         * Записать студента на курс по email
+         * @description Только автор курса. Принимает email, не userId — автор обычно знает почту студента, не его внутренний id. Идемпотентно: повторный вызов для уже записанного студента ничего не ломает и не задваивает studentsCount.
+         */
+        post: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
                     id: string;
-                    userId: string;
                 };
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** Format: email */
+                        email: string;
+                    };
+                };
+            };
             responses: {
-                /** @description Пользователь убран из allowedUsers */
-                200: {
+                /** @description Студент записан */
+                201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
                             message: string;
-                            course: components["schemas"]["Course"];
+                            enrollment: components["schemas"]["Enrollment"];
                         };
                     };
                 };
@@ -1871,7 +1854,79 @@ export interface paths {
                         "application/json": components["schemas"]["Error"];
                     };
                 };
-                /** @description Курс не найден */
+                /** @description Курс не найден или пользователь с таким email не найден */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/courses/{id}/enrollments/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Отчислить студента с курса
+         * @description Soft-delete через status: "revoked" — история записи сохраняется, документ не удаляется.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Студент отчислен */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            message: string;
+                        };
+                    };
+                };
+                /** @description Не авторизован */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Вызывающий не автор курса */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Курс не найден или студент не был записан */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -3150,11 +3205,28 @@ export interface components {
             lessonsCount: number;
             averageRating?: number;
             isPublished: boolean;
-            allowedUsers: string[];
+            studentsCount: number;
             /** Format: date-time */
             createdAt: string | null;
             /** Format: date-time */
             updatedAt: string | null;
+        };
+        Enrollment: {
+            /** @example 507f1f77bcf86cd799439011 */
+            _id: string;
+            /** @example 507f1f77bcf86cd799439011 */
+            courseId: string;
+            userId: string | {
+                /** @example 507f1f77bcf86cd799439011 */
+                _id: string;
+                name: string;
+                /** Format: email */
+                email: string;
+            };
+            /** @enum {string} */
+            status: "active" | "revoked";
+            /** Format: date-time */
+            enrolledAt: string | null;
         };
         Lesson: {
             /** @example 507f1f77bcf86cd799439011 */
