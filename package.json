@@ -12,14 +12,15 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "types:api": "openapi-typescript ../express-lms/openapi.json -o src/lib/api/schema.gen.ts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "client-only": "^0.0.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.31.0",
-    "next": "16.3.1",
+    "next": "16.3.4",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.6.7",
     "react": "19.2.8",
@@ -43,9 +44,10 @@
     "@vitejs/plugin-react": "^6.1.0",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9",
-    "eslint-config-next": "16.3.1",
+    "eslint-config-next": "16.3.4",
     "jsdom": "^30.0.1",
     "mongodb": "^7.5.0",
+    "openapi-typescript": "7.13.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.11"

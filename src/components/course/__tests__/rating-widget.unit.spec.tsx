@@ -18,7 +18,14 @@ vi.mock("@/lib/api/courses.client", () => ({ rateCourse: rateCourseMock }));
 const { ApiError } = await import("@/lib/api/core");
 const { RatingWidget } = await import("../rating-widget");
 
-const currentUser: User = { id: "user-1", email: "u@example.com", name: "U", role: "student" };
+const currentUser: User = {
+  id: "user-1",
+  email: "u@example.com",
+  name: "U",
+  role: "student",
+  createdAt: null,
+  updatedAt: null,
+};
 
 describe("RatingWidget", () => {
   beforeEach(() => {

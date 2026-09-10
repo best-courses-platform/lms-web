@@ -1,101 +1,37 @@
-// Типы вручную списаны с express-lms/src/modules/{auth,courses,lessons,users}/*.types.ts.
-// ObjectId -> string, Date -> string (JSON не знает ни того, ни другого).
-// Общего пакета/кодогенерации пока нет (см. roadmap LMS — Swagger/OpenAPI не подключены) —
-// синхронизировать с бэкендом вручную при изменении схем.
+// Прикладные типы — производные от components["schemas"] в schema.gen.ts (сгенерирован
+// openapi-typescript из express-lms/openapi.json, см. npm run types:api). Ручные объявления
+// остаются только там, где в спеке нет своего именованного компонента (сейчас таких нет).
+// Раньше типы переписывались руками с backend-исходников — реальный дрейф уже случался
+// (Course.ratings существовал здесь, когда бэкенд давно вынес оценки в отдельную коллекцию
+// и оставил только averageRating) — см. Obsidian: Рефакторинг проблем/0, пункт про кодоген.
+import type { components } from "./schema.gen";
 
-export type UserRole = "student" | "author" | "admin";
+export type UserRole = components["schemas"]["UserSummary"]["role"];
 
-export type User = {
-  id: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  createdAt?: string;
-  updatedAt?: string;
-};
+export type User = components["schemas"]["UserDetail"];
 
-// Списано с refresh-session.types.ts (SessionView) — публичная проекция сессии для экрана
-// "активные сессии": намеренно без tokenHash/familyId/replacedBySession, клиенту знать о них
-// незачем. userAgent/ip — только для отображения, не гарантированно достоверны (см. бэкенд).
-export type SessionView = {
-  id: string;
-  current: boolean;
-  createdAt: string;
-  lastUsedAt: string | null;
-  expiresAt: string;
-  userAgent: string | null;
-  ip: string | null;
-};
+export type SessionView = components["schemas"]["SessionView"];
 
-export type Difficulty = "beginner" | "intermediate" | "advanced";
+export type Rating = components["schemas"]["Rating"];
 
-export type Rating = {
-  userId: string;
-  value: number;
-  createdAt: string;
-};
+export type Course = components["schemas"]["Course"];
 
-export type CourseAuthor = {
-  _id: string;
-  name: string;
-  email: string;
-  avatar: string | null;
-};
+export type Difficulty = Course["difficulty"];
 
-export type Course = {
-  _id: string;
-  title: string;
-  description: string;
-  previewImage: string;
-  // Большинство запросов (findById/findAll/findPublished/...) популейтят автора
-  // до { _id, name, email, avatar }; POST /api/courses (create) — нет, там просто
-  // ObjectId-строка (id, который сам же передал сервер из req.user). Оба варианта
-  // реальны, различать по typeof — см. getCourseAuthorId ниже.
-  author: string | CourseAuthor;
-  tags: string[];
-  difficulty: Difficulty;
-  lessons?: string[];
-  ratings: Rating[];
-  averageRating?: number;
-  isPublished: boolean;
-  allowedUsers: string[];
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type LessonResourceType = "file" | "link" | "video";
-
-export type LessonResource = {
-  type: LessonResourceType;
-  title: string;
-  url?: string;
-  description?: string;
-  fileSize?: number;
-  mimeType?: string;
-  originalName?: string;
-};
-
-export type VideoFile = {
-  url?: string;
-  originalName?: string;
-  size?: number;
-  duration?: number;
-  mimeType?: string;
-};
+// author — либо чистый ObjectId-строка (ответ create — сервер сам подставляет из токена,
+// не популейтит заново), либо популейченный объект (все find*-эндпоинты). Реальный union,
+// выраженный в самой спеке (см. courseAuthorSchema в express-lms/src/openapi/courses.openapi.ts) —
+// не "усреднённый" вручную тип, как было раньше.
+export type CourseAuthor = Extract<Course["author"], object>;
 
 export function getCourseAuthorId(author: Course["author"]): string {
   return typeof author === "string" ? author : author._id;
 }
 
-export type Lesson = {
-  _id: string;
-  title: string;
-  description: string;
-  courseId: string;
-  order: number;
-  videoFile?: VideoFile;
-  resources?: LessonResource[];
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-};
+export type Lesson = components["schemas"]["Lesson"];
+
+export type VideoFile = NonNullable<Lesson["videoFile"]>;
+
+export type LessonResource = NonNullable<Lesson["resources"]>[number];
+
+export type LessonResourceType = LessonResource["type"];
