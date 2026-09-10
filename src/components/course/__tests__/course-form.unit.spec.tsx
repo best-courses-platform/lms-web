@@ -34,7 +34,7 @@ function createCourse(overrides: Partial<Course> = {}): Course {
     difficulty: "intermediate",
     lessonsCount: 0,
     isPublished: true,
-    allowedUsers: [],
+    studentsCount: 0,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
     ...overrides,
