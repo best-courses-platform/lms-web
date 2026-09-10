@@ -33,6 +33,18 @@ async function createCourseWithLesson(page: Page, courseTitle: string, lessonTit
   return { courseId: course._id as string, lessonId: lesson._id as string };
 }
 
+async function createSecondLesson(page: Page, courseId: string, lessonTitle: string) {
+  const lessonRes = await page.request.post(`http://localhost:3000/api/lessons/course/${courseId}`, {
+    data: {
+      title: lessonTitle,
+      description: "Второй урок курса — для проверки навигации предыдущий/следующий.",
+      tags: [],
+    },
+  });
+  const { data: lesson } = await lessonRes.json();
+  return lesson._id as string;
+}
+
 test.describe("Предпросмотр урока — intercepting route + @modal", () => {
   test("клик по уроку со страницы курса открывает модалку, не покидая страницу курса", async ({ page }) => {
     await registerVerifiedAndLogin(page, { role: "author" });
@@ -70,5 +82,28 @@ test.describe("Предпросмотр урока — intercepting route + @mod
 
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(page.getByRole("heading", { name: lessonTitle })).toBeVisible();
+  });
+
+  test("кнопка «следующий урок» на полной странице урока должна вести на полную страницу, не открывать модалку", async ({
+    page,
+  }) => {
+    // Регрессия: @modal раньше висел в корневом layout — перехватывал ЛЮБОЙ клик по
+    // <Link> на /lessons/[id], включая клик изнутри самой полной страницы урока (кнопки
+    // "предыдущий/следующий"), не только со страницы курса. После переноса @modal в
+    // courses/[id]/layout.tsx слот активен только под /courses/[id] — клик отсюда
+    // (страница урока — не под /courses/[id]) должен приводить к обычной полной навигации.
+    await registerVerifiedAndLogin(page, { role: "author" });
+    const courseTitle = `E2E Nav Course ${Date.now()}`;
+    const firstLessonTitle = `E2E Nav Lesson A ${Date.now()}`;
+    const secondLessonTitle = `E2E Nav Lesson B ${Date.now()}`;
+    const { courseId, lessonId: firstLessonId } = await createCourseWithLesson(page, courseTitle, firstLessonTitle);
+    await createSecondLesson(page, courseId, secondLessonTitle);
+
+    await page.goto(`/lessons/${firstLessonId}`);
+    await page.getByRole("link", { name: secondLessonTitle }).click();
+
+    await page.waitForURL(/\/lessons\/[a-f0-9]{24}$/);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: secondLessonTitle })).toBeVisible();
   });
 });
