@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { ResendVerification } from "@/components/auth/resend-verification";
 import { login } from "@/lib/api/auth.client";
 import { ApiError } from "@/lib/api/core";
 
@@ -16,11 +17,13 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [emailNotVerified, setEmailNotVerified] = useState(false);
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    setEmailNotVerified(false);
     setPending(true);
 
     try {
@@ -28,6 +31,9 @@ export function LoginForm() {
       router.push("/courses");
       router.refresh();
     } catch (err) {
+      // 403 на логине — единственный случай "email не подтверждён" (неверные данные дают 401):
+      // предлагаем отправить письмо подтверждения ещё раз, иначе человек застрял бы на входе.
+      setEmailNotVerified(err instanceof ApiError && err.status === 403);
       setError(err instanceof ApiError ? err.message : "Не удалось войти, попробуйте ещё раз");
     } finally {
       setPending(false);
@@ -85,6 +91,9 @@ export function LoginForm() {
           {pending ? "Входим..." : "Войти"}
         </Button>
       </form>
+
+      {/* Вне <form> логина: вложенные формы невалидны в HTML */}
+      {emailNotVerified && <ResendVerification email={email} />}
     </div>
   );
 }

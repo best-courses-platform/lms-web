@@ -13,7 +13,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 const loginMock = vi.fn();
-vi.mock("@/lib/api/auth.client", () => ({ login: loginMock }));
+const resendVerificationMock = vi.fn();
+vi.mock("@/lib/api/auth.client", () => ({ login: loginMock, resendVerification: resendVerificationMock }));
 
 const { ApiError } = await import("@/lib/api/core");
 const { LoginForm } = await import("../login-form");
@@ -23,6 +24,7 @@ describe("LoginForm", () => {
     pushMock.mockReset();
     refreshMock.mockReset();
     loginMock.mockReset();
+    resendVerificationMock.mockReset();
   });
 
   describe("Когда данные валидны", () => {
@@ -77,6 +79,39 @@ describe("LoginForm", () => {
       // Then
       expect(await screen.findByText("Неверный email или пароль")).toBeInTheDocument();
       expect(pushMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Когда email не подтверждён (бэкенд отвечает 403)", () => {
+    it("должен показать ошибку и кнопку повторной отправки письма на введённый email", async () => {
+      // Given
+      loginMock.mockRejectedValue(new ApiError(403, "Email не подтвержден. Проверьте вашу почту."));
+      resendVerificationMock.mockResolvedValue({ message: "ok" });
+      const user = userEvent.setup();
+      render(<LoginForm />);
+      await user.type(screen.getByLabelText("Email"), "unverified@example.com");
+      await user.type(screen.getByLabelText("Пароль"), "password123");
+
+      // When
+      await user.click(screen.getByRole("button", { name: "Войти" }));
+      await user.click(await screen.findByRole("button", { name: "Отправить письмо повторно" }));
+
+      // Then
+      expect(screen.getByText("Email не подтвержден. Проверьте вашу почту.")).toBeInTheDocument();
+      expect(resendVerificationMock).toHaveBeenCalledWith({ email: "unverified@example.com" });
+    });
+
+    it("не должен предлагать повторную отправку при неверном пароле (401)", async () => {
+      loginMock.mockRejectedValue(new ApiError(401, "Неверный email или пароль"));
+      const user = userEvent.setup();
+      render(<LoginForm />);
+      await user.type(screen.getByLabelText("Email"), "user@example.com");
+      await user.type(screen.getByLabelText("Пароль"), "wrong-password");
+
+      await user.click(screen.getByRole("button", { name: "Войти" }));
+
+      expect(await screen.findByText("Неверный email или пароль")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Отправить письмо повторно" })).not.toBeInTheDocument();
     });
   });
 

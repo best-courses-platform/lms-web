@@ -8,8 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { ResendVerification } from "@/components/auth/resend-verification";
 import { register } from "@/lib/api/auth.client";
 import { ApiError } from "@/lib/api/core";
+import { maskEmail } from "@/lib/format";
 
 export function RegisterForm() {
   const [name, setName] = useState("");
@@ -42,12 +44,20 @@ export function RegisterForm() {
         <div className="flex flex-col gap-1.5">
           <h1 className="text-xl font-semibold tracking-tight">Проверьте почту</h1>
           <p className="text-sm text-muted-foreground">
-            Мы отправили письмо с токеном подтверждения на {email}. Подтвердите email, чтобы войти.
+            Мы отправили письмо на <span className="font-medium text-foreground">{maskEmail(email)}</span>. Откройте
+            его и перейдите по ссылке, чтобы подтвердить адрес.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/verify-email">Подтвердить email</Link>
-        </Button>
+        <ResendVerification email={email} />
+        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+          {/* Опечатка в адресе: возвращаемся к форме с уже заполненными полями и правим email */}
+          <button type="button" onClick={() => setDone(false)} className="underline underline-offset-4">
+            Указали не тот email? Изменить
+          </button>
+          <Link href="/verify-email" className="underline underline-offset-4">
+            Ввести токен из письма вручную
+          </Link>
+        </div>
       </div>
     );
   }
