@@ -8,7 +8,8 @@ import type { apiClient as ApiClientFn } from "../http-client";
 vi.mock("../http-client", () => ({ apiClient: vi.fn() }));
 
 const { apiClient } = (await import("../http-client")) as unknown as { apiClient: typeof ApiClientFn };
-const { login, register, verifyEmail, logout, logoutAll, revokeSession } = await import("../auth.client");
+const { login, register, verifyEmail, resendVerification, logout, logoutAll, revokeSession } =
+  await import("../auth.client");
 
 const mockApiClient = apiClient as ReturnType<typeof vi.fn>;
 
@@ -61,6 +62,26 @@ describe("auth.client", () => {
       await logout();
 
       expect(mockApiClient).toHaveBeenCalledWith("/api/auth/logout", { method: "POST" });
+    });
+  });
+
+  describe("resendVerification", () => {
+    it("по email: должен отправить POST на /api/auth/resend-verification с email в теле", async () => {
+      await resendVerification({ email: "user@example.com" });
+
+      expect(mockApiClient).toHaveBeenCalledWith(
+        "/api/auth/resend-verification",
+        expect.objectContaining({ method: "POST", body: JSON.stringify({ email: "user@example.com" }) })
+      );
+    });
+
+    it("по токену: должен отправить POST на тот же путь с токеном в теле, без email", async () => {
+      await resendVerification({ token: "expired-token" });
+
+      expect(mockApiClient).toHaveBeenCalledWith(
+        "/api/auth/resend-verification",
+        expect.objectContaining({ method: "POST", body: JSON.stringify({ token: "expired-token" }) })
+      );
     });
   });
 

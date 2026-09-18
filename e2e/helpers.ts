@@ -40,6 +40,14 @@ export async function getEmailVerificationToken(email: string): Promise<string> 
   return user.emailVerificationToken as string;
 }
 
+// Состарить токен подтверждения: срок действия — сутки назад (ссылка из письма "протухла").
+export async function expireEmailVerificationToken(email: string): Promise<void> {
+  const db = await getDb();
+  await db
+    .collection("users")
+    .updateOne({ email: email.toLowerCase() }, { $set: { emailVerificationExpires: new Date(Date.now() - 60 * 60 * 1000) } });
+}
+
 export async function promoteToAuthor(email: string): Promise<void> {
   const db = await getDb();
   await db.collection("users").updateOne({ email: email.toLowerCase() }, { $set: { role: "author" } });

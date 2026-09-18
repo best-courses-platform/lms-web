@@ -27,6 +27,18 @@ export function verifyEmail(token: string) {
   });
 }
 
+// Ровно одно из двух: email (письмо не пришло) либо token из просроченной ссылки (аккаунт
+// бэкенд находит по токену). Бэкенд отвечает одинаково для любого случая — незнакомый
+// email/токен, уже подтверждённый аккаунт, серверная пауза (защита от user enumeration, см.
+// authService.resendVerificationEmail): по ответу нельзя понять, ушло ли письмо реально,
+// UI обязан показывать нейтральный текст.
+export function resendVerification(target: { email: string } | { token: string }) {
+  return apiClient<{ message: string }>("/api/auth/resend-verification", {
+    method: "POST",
+    body: JSON.stringify(target),
+  });
+}
+
 export function logout() {
   return apiClient<{ message: string }>("/api/auth/logout", { method: "POST" });
 }
