@@ -2,7 +2,8 @@ import { test, expect } from "@playwright/test";
 import {
   closeDbConnection,
   expireEmailVerificationToken,
-  getEmailVerificationToken,
+  getEmailVerificationTokenHash,
+  issueEmailVerificationToken,
   registerVerifiedAndLogin,
   uniqueEmail,
 } from "./helpers";
@@ -38,7 +39,7 @@ test.describe("Регистрация → подтверждение email → �
     await page.getByRole("button", { name: "Зарегистрироваться" }).click();
     await page.getByText("Проверьте почту").waitFor();
 
-    const token = await getEmailVerificationToken(email);
+    const token = await issueEmailVerificationToken(email);
     await page.goto(`/verify-email?token=${token}`);
     await page.getByRole("button", { name: "Подтвердить" }).click();
     await page.getByText("Email подтверждён").waitFor();
@@ -88,8 +89,9 @@ test.describe("Регистрация → подтверждение email → �
     await page.getByLabel("Повторите пароль").fill("password123");
     await page.getByRole("button", { name: "Зарегистрироваться" }).click();
     await page.getByText("Проверьте почту").waitFor();
-    const oldToken = await getEmailVerificationToken(email);
+    const oldToken = await issueEmailVerificationToken(email);
     await expireEmailVerificationToken(email);
+    const hashBefore = await getEmailVerificationTokenHash(email);
 
     // When
     await page.goto(`/verify-email?token=${oldToken}`);
@@ -98,9 +100,11 @@ test.describe("Регистрация → подтверждение email → �
     await page.getByRole("button", { name: "Отправить новую ссылку" }).click();
     await expect(page.getByRole("status")).toContainText("Если этот email ещё не подтверждён");
 
-    // Then — бэкенд нашёл аккаунт по просроченному токену и выдал новый; по нему подтверждение проходит
-    const newToken = await getEmailVerificationToken(email);
-    expect(newToken).not.toBe(oldToken);
+    // Then — бэкенд нашёл аккаунт по просроченному токену и выдал новый (в БД сменился хеш)
+    expect(await getEmailVerificationTokenHash(email)).not.toBe(hashBefore);
+    // Сырой токен новой ссылки ушёл бы в письмо, а письма в e2e не отправляются, — по известному
+    // тесту токену проверяем, что подтверждение проходит
+    const newToken = await issueEmailVerificationToken(email);
     await page.goto(`/verify-email?token=${newToken}`);
     await page.getByRole("button", { name: "Подтвердить" }).click();
     await page.getByText("Email подтверждён").waitFor();

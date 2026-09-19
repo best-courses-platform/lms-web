@@ -62,7 +62,7 @@ export function ResendVerification(props: ResendVerificationProps) {
           между письмами (защита от user enumeration) — текст нейтральный, не "письмо отправлено". */}
       {sent && (
         <p role="status" className="text-sm text-muted-foreground">
-          Если этот email ещё не подтверждён, мы отправили новое письмо. Проверьте почту, включая папку «Спам».
+          Если этот email ещё не подтверждён, мы отправили новое письмо. Проверьте почту, включая папку «Спам». Не пришло — подождите минуту и повторите.
         </p>
       )}
 
