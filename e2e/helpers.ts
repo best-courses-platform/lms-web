@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { MongoClient, type Db } from "mongodb";
@@ -31,7 +32,23 @@ export async function closeDbConnection(): Promise<void> {
   client = null;
 }
 
-export async function getEmailVerificationToken(email: string): Promise<string> {
+// express-lms хранит в БД только sha256 токена (сырой уходит в письмо, а письма в e2e не
+// отправляются — email не настроен). Поэтому тест сам "выдаёт" известный ему токен: генерирует
+// сырой, записывает в БД его хеш (как делает сервис, см. express-lms/src/utils/one-time-token.ts)
+// и возвращает сырой — тот, что реально пришёл бы по ссылке.
+export async function issueEmailVerificationToken(email: string): Promise<string> {
+  const token = crypto.randomBytes(32).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  const db = await getDb();
+  await db.collection("users").updateOne(
+    { email: email.toLowerCase() },
+    { $set: { emailVerificationToken: tokenHash, emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) } }
+  );
+  return token;
+}
+
+// Хеш токена, как он лежит в БД — чтобы проверить, что бэкенд выдал новый токен (значение сменилось).
+export async function getEmailVerificationTokenHash(email: string): Promise<string> {
   const db = await getDb();
   const user = await db.collection("users").findOne({ email: email.toLowerCase() });
   if (!user?.emailVerificationToken) {
@@ -81,7 +98,7 @@ export async function registerVerifiedAndLogin(
     await promoteToAuthor(email);
   }
 
-  const token = await getEmailVerificationToken(email);
+  const token = await issueEmailVerificationToken(email);
   await page.goto(`/verify-email?token=${token}`);
   await page.getByRole("button", { name: "Подтвердить" }).click();
   await page.getByText("Email подтверждён").waitFor();
